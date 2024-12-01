@@ -16,9 +16,9 @@ async function stringToHex(messages, modelName) {
   const formattedMessages = messages.map((msg) => {
     console.log(msg);  // 在控制台打印原始消息对象
     return {
-      ...msg,
       role: msg.role === 'user' ? 1 : 2,
       message_id: uuidv4(),
+      content: typeof msg.content === 'string' ? msg.content : msg.content.text,
     };
   });
   const message = {
