@@ -13,12 +13,14 @@ async function stringToHex(messages, modelName) {
     }
       break; // 直接跳出循环
   }
-  const formattedMessages = messages.map((msg) => ({
-    role: msg.role === 'user' ? 1 : 2,
-    message_id: uuidv4(),
-    content: String(msg.content), // 确保 content 为字符串
-  }));
-
+  const formattedMessages = messages.map((msg) => {
+    console.log(msg);  // 在控制台打印原始消息对象
+    return {
+      ...msg,
+      role: msg.role === 'user' ? 1 : 2,
+      message_id: uuidv4(),
+    };
+  });
   const message = {
     messages: formattedMessages,
     instructions: {
