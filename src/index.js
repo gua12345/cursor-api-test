@@ -8,13 +8,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.post('/v1/chat/completions', async (req, res) => {
-  // o1开头的模型，不支持流式输出
-  if (req.body.model.startsWith('o1-') && req.body.stream) {
-    return res.status(400).json({
-      error: 'Model not supported stream',
-    });
-  }
-
   let currentKeyIndex = 0;
   try {
     const { model, messages, stream = false } = req.body;
@@ -72,42 +65,50 @@ app.post('/v1/chat/completions', async (req, res) => {
 
       const responseId = `chatcmpl-${uuidv4()}`;
 
-      // 使用封装的函数处理 chunk
+      let text = '';
+      // 非流式获取完整响应
       for await (const chunk of response.body) {
-        const text = await chunkToUtf8String(chunk);
+        text += await chunkToUtf8String(chunk);
+      }
 
-        if (text.length > 0) {
-          res.write(
-            `data: ${JSON.stringify({
-              id: responseId,
-              object: 'chat.completion.chunk',
-              created: Math.floor(Date.now() / 1000),
-              model,
-              choices: [
-                {
-                  index: 0,
-                  delta: {
-                    content: text,
-                  },
+      // 对文本进行预处理（如果需要）
+      text = text.replace(/^.*<\|END_USER\|>/s, '');
+      text = text.replace(/^\n[a-zA-Z]?/, '').trim();
+
+      // 将文本拆分为小块，模拟流式输出
+      const chunkSize = 50; // 每个块的大小，可以根据需要调整
+      for (let i = 0; i < text.length; i += chunkSize) {
+        const chunkText = text.slice(i, i + chunkSize);
+        res.write(
+          `data: ${JSON.stringify({
+            id: responseId,
+            object: 'chat.completion.chunk',
+            created: Math.floor(Date.now() / 1000),
+            model,
+            choices: [
+              {
+                index: 0,
+                delta: {
+                  content: chunkText,
                 },
-              ],
-            })}\n\n`,
-          );
-        }
+              },
+            ],
+          })}\n\n`,
+        );
+        // 可选：添加延迟以模拟真实的流式响应
+        await new Promise((resolve) => setTimeout(resolve, 50));
       }
 
       res.write('data: [DONE]\n\n');
       return res.end();
     } else {
+      // 非流式模式，保持原样
       let text = '';
-      // 在非流模式下也使用封装的函数
       for await (const chunk of response.body) {
         text += await chunkToUtf8String(chunk);
       }
-      // 对解析后的字符串进行进一步处理
       text = text.replace(/^.*<\|END_USER\|>/s, '');
       text = text.replace(/^\n[a-zA-Z]?/, '').trim();
-      // console.log(text)
 
       return res.json({
         id: `chatcmpl-${uuidv4()}`,
