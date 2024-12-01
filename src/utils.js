@@ -5,10 +5,18 @@ const $root = require('./message.js');
 const regex = /<\|BEGIN_SYSTEM\|>.*?<\|END_SYSTEM\|>.*?<\|BEGIN_USER\|>.*?<\|END_USER\|>/s;
 
 async function stringToHex(messages, modelName) {
+  // 验证 messages 数组
+  for (const msg of messages) {
+    if (typeof msg.content !== 'string') {
+      console.error(`Error: Each message must have a content field of type string. Found type '${typeof msg.content}' with content: ${msg.content}`);
+      break; // 直接跳出循环
+    }
+      break; // 直接跳出循环
+  }
   const formattedMessages = messages.map((msg) => ({
-    ...msg,
     role: msg.role === 'user' ? 1 : 2,
     message_id: uuidv4(),
+    content: String(msg.content), // 确保 content 为字符串
   }));
 
   const message = {
