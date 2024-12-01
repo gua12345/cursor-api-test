@@ -5,22 +5,14 @@ const $root = require('./message.js');
 const regex = /<\|BEGIN_SYSTEM\|>.*?<\|END_SYSTEM\|>.*?<\|BEGIN_USER\|>.*?<\|END_USER\|>/s;
 
 async function stringToHex(messages, modelName) {
-  // 验证 messages 数组
-  for (const msg of messages) {
-    if (typeof msg.content !== 'string') {
-      console.error(`Error: Each message must have a content field of type string. Found type '${typeof msg.content}' with content: ${msg.content}`);
-      break; // 直接跳出循环
-    }
-      break; // 直接跳出循环
-  }
   const formattedMessages = messages.map((msg) => {
-    console.log(msg);  // 在控制台打印原始消息对象
     return {
       role: msg.role === 'user' ? 1 : 2,
       message_id: uuidv4(),
       content: typeof msg.content === 'string' ? msg.content : msg.content.text,
     };
   });
+  
   const message = {
     messages: formattedMessages,
     instructions: {
