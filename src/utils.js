@@ -5,11 +5,17 @@ const $root = require('./message.js');
 const regex = /<\|BEGIN_SYSTEM\|>.*?<\|END_SYSTEM\|>.*?<\|BEGIN_USER\|>.*?<\|END_USER\|>/s;
 
 async function stringToHex(messages, modelName) {
-  const formattedMessages = messages.map((msg) => ({
-    ...msg,
-    role: msg.role === 'user' ? 1 : 2,
-    message_id: uuidv4(),
-  }));
+  const formattedMessages = messages.map((msg) => {
+    // 确保消息内容是字符串
+    let messageContent = typeof msg.message === 'string' ? msg.message : String(msg.message);
+
+    return {
+      ...msg,
+      message: messageContent, // 更新消息内容为确保是字符串的版本
+      role: msg.role === 'user' ? 1 : 2,
+      message_id: uuidv4(),
+    };
+  });
 
   const message = {
     messages: formattedMessages,
